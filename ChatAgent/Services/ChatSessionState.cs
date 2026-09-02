@@ -1,14 +1,17 @@
 using ChatAgent.Models;
+using ChatAgent.Services.Llm;
+using ChatAgent.Services.Validation;
 
 namespace ChatAgent.Services;
 
-public sealed class ChatSessionState
+public sealed class ChatSessionState(IAgentService agentService)
 {
     private readonly List<ChatMessage> _messages = [];
 
     public IReadOnlyList<ChatMessage> Messages => _messages;
     public LabelData CurrentLabel { get; private set; } = new();
     public bool IsProcessing { get; private set; }
+    public bool IsLabelReady { get; private set; }
 
     public event Action? StateChanged;
 
@@ -21,18 +24,52 @@ public sealed class ChatSessionState
 
         _messages.Add(new ChatMessage(ChatRole.User, text, DateTimeOffset.UtcNow));
         IsProcessing = true;
+        IsLabelReady = false;
         StateChanged?.Invoke();
 
-        var reply = await GenerateStubAgentReplyAsync(text);
-        _messages.Add(new ChatMessage(ChatRole.Agent, reply, DateTimeOffset.UtcNow));
+        var replyText = await ProcessTurnAsync();
 
+        _messages.Add(new ChatMessage(ChatRole.Agent, replyText, DateTimeOffset.UtcNow));
         IsProcessing = false;
         StateChanged?.Invoke();
     }
 
-    private static async Task<string> GenerateStubAgentReplyAsync(string userText)
+    private async Task<string> ProcessTurnAsync()
     {
-        await Task.Delay(500);
-        return $"(placeholder reply) You said: \"{userText}\".";
+        AgentTurnResult result;
+        try
+        {
+            result = await agentService.ProcessTurnAsync(CurrentLabel, _messages);
+        }
+        catch (Exception)
+        {
+            return "Sorry, I couldn't reach the assistant just now. Please try again.";
+        }
+
+        CurrentLabel = MergePatch(CurrentLabel, result.LabelDataPatch);
+
+        var validation = LabelValidator.Validate(CurrentLabel);
+        IsLabelReady = result.ReadyToGenerate && validation.IsValid && result.Conflicts.Count == 0;
+
+        if (result.ReadyToGenerate && !IsLabelReady)
+        {
+            var reason = !validation.IsValid
+                ? validation.Errors[0].Message
+                : result.Conflicts[0].Description;
+            return $"Hold on - before I generate the label: {reason}";
+        }
+
+        return result.Reply;
     }
+
+    private static LabelData MergePatch(LabelData current, LabelData patch) => new()
+    {
+        ProductName = patch.ProductName ?? current.ProductName,
+        Volume = patch.Volume ?? current.Volume,
+        BarcodeType = patch.BarcodeType ?? current.BarcodeType,
+        BarcodeData = patch.BarcodeData ?? current.BarcodeData,
+        Ingredients = patch.Ingredients ?? current.Ingredients,
+        BestBefore = patch.BestBefore ?? current.BestBefore,
+        Manufacturer = patch.Manufacturer ?? current.Manufacturer
+    };
 }
