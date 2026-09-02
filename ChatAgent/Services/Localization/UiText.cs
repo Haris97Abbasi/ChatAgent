@@ -15,6 +15,9 @@ public static class UiText
         ["BestBefore"] = ("Best before", "Mindesthaltbar bis"),
         ["Manufacturer"] = ("Manufacturer", "Hersteller"),
         ["NewLabel"] = ("Start new label", "Neues Etikett starten"),
+        ["VerificationNote"] = (
+            "AI-generated labels are based on the information provided. Please verify all details before printing.",
+            "KI-generierte Etiketten basieren auf den bereitgestellten Angaben. Bitte überprüfen Sie alle Details vor dem Druck."),
     };
 
     public static string Get(string key, UiLanguage language)
