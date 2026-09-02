@@ -1,5 +1,6 @@
 using ChatAgent.Components;
 using ChatAgent.Models;
+using ChatAgent.Services;
 using ChatAgent.Services.Llm;
 using ChatAgent.Services.TecIt;
 using Microsoft.Extensions.Options;
@@ -25,6 +26,8 @@ builder.Services.AddHttpClient<IAgentService, ClaudeAgentService>((sp, client) =
     client.DefaultRequestHeaders.Add("x-api-key", options.ApiKey);
     client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
 });
+
+builder.Services.AddScoped<ChatSessionState>();
 
 var app = builder.Build();
 

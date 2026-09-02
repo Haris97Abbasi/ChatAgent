@@ -1,5 +1,52 @@
-﻿@page "/"
+@page "/"
+@rendermode InteractiveServer
+@inject ChatSessionState ChatState
+@implements IDisposable
 
 <PageTitle>ChatAgent</PageTitle>
 
-<h1>ChatAgent</h1>
+<h1 class="h4 mb-3">ChatAgent — Getränkeetiketten</h1>
+
+<div class="border rounded d-flex flex-column" style="height: 65vh;">
+    <div class="flex-grow-1 overflow-auto p-3">
+        @foreach (var message in ChatState.Messages)
+        {
+            <ChatMessageBubble Message="message" />
+        }
+        @if (ChatState.IsProcessing)
+        {
+            <div class="text-muted fst-italic">Agent is thinking…</div>
+        }
+    </div>
+
+    <form class="border-top p-2 d-flex gap-2" @onsubmit="SendAsync">
+        <input class="form-control" @bind="_input" @bind:event="oninput"
+               placeholder="Describe your beverage label..." disabled="@ChatState.IsProcessing" />
+        <button class="btn btn-primary" type="submit" disabled="@(ChatState.IsProcessing || string.IsNullOrWhiteSpace(_input))">
+            Send
+        </button>
+    </form>
+</div>
+
+@code {
+    private string _input = "";
+
+    protected override void OnInitialized()
+    {
+        ChatState.StateChanged += OnChatStateChanged;
+    }
+
+    private void OnChatStateChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task SendAsync()
+    {
+        var text = _input.Trim();
+        _input = "";
+        await ChatState.SendUserMessageAsync(text);
+    }
+
+    public void Dispose()
+    {
+        ChatState.StateChanged -= OnChatStateChanged;
+    }
+}
