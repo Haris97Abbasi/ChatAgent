@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="ChatAgent.Tests/ChatAgent.Tests.csproj" />
   <Project Path="ChatAgent/ChatAgent.csproj" />
 </Solution>
