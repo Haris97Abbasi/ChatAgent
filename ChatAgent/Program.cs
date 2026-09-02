@@ -16,6 +16,7 @@ builder.Services.AddHttpClient<TecItBarcodeClient>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<TecItOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 builder.Services.Configure<ClaudeOptions>(builder.Configuration.GetSection(ClaudeOptions.SectionName));
@@ -25,6 +26,7 @@ builder.Services.AddHttpClient<IAgentService, ClaudeAgentService>((sp, client) =
     client.BaseAddress = new Uri(options.BaseUrl);
     client.DefaultRequestHeaders.Add("x-api-key", options.ApiKey);
     client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
 builder.Services.AddScoped<ChatSessionState>();
@@ -47,13 +49,21 @@ app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-app.MapGet("/api/barcode-image", async (string data, string? type, TecItBarcodeClient client, CancellationToken cancellationToken) =>
+app.MapGet("/api/barcode-image", async (string data, string? type, TecItBarcodeClient client, ILogger<Program> logger, CancellationToken cancellationToken) =>
 {
     var barcodeType = Enum.TryParse<BarcodeType>(type, ignoreCase: true, out var parsed) ? parsed : BarcodeType.Ean13;
     var label = new LabelData { BarcodeType = barcodeType, BarcodeData = data };
 
-    var result = await client.GetBarcodeImageAsync(label, cancellationToken);
-    return Results.File(result.ImageBytes, result.ContentType);
+    try
+    {
+        var result = await client.GetBarcodeImageAsync(label, cancellationToken);
+        return Results.File(result.ImageBytes, result.ContentType);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "TEC-IT barcode request failed for barcode type {BarcodeType}", barcodeType);
+        return Results.Problem("Could not generate the barcode image.", statusCode: StatusCodes.Status502BadGateway);
+    }
 });
 
 app.Run();

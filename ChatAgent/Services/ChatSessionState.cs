@@ -4,8 +4,10 @@ using ChatAgent.Services.Validation;
 
 namespace ChatAgent.Services;
 
-public sealed class ChatSessionState(IAgentService agentService)
+public sealed class ChatSessionState(IAgentService agentService, ILogger<ChatSessionState> logger)
 {
+    private const int MaxMessageLength = 2000;
+
     private readonly List<ChatMessage> _messages = [];
 
     public IReadOnlyList<ChatMessage> Messages => _messages;
@@ -19,6 +21,16 @@ public sealed class ChatSessionState(IAgentService agentService)
     {
         if (string.IsNullOrWhiteSpace(text) || IsProcessing)
         {
+            return;
+        }
+
+        if (text.Length > MaxMessageLength)
+        {
+            _messages.Add(new ChatMessage(
+                ChatRole.Agent,
+                $"That message is too long ({text.Length} characters) - please keep it under {MaxMessageLength} characters.",
+                DateTimeOffset.UtcNow));
+            StateChanged?.Invoke();
             return;
         }
 
@@ -41,9 +53,10 @@ public sealed class ChatSessionState(IAgentService agentService)
         {
             result = await agentService.ProcessTurnAsync(CurrentLabel, _messages);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return "Sorry, I couldn't reach the assistant just now. Please try again.";
+            logger.LogError(ex, "Agent turn processing failed");
+            return "Sorry, I couldn't reach the assistant in time. Please try again.";
         }
 
         CurrentLabel = MergePatch(CurrentLabel, result.LabelDataPatch);
