@@ -399,3 +399,7 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# TEC-IT home task instruction files (not part of the submission)
+Barcode.tec-it.com API (1).pdf
+TEC-IT_Bewerbungsaufgabe_DotNet_Chat_Agent_Getraenkeetiketten (1).pdf

@@ -1,10 +1,19 @@
 using ChatAgent.Components;
+using ChatAgent.Services.TecIt;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.Configure<TecItOptions>(builder.Configuration.GetSection(TecItOptions.SectionName));
+builder.Services.AddHttpClient<TecItBarcodeClient>((sp, client) =>
+{
+    var options = sp.GetRequiredService<IOptions<TecItOptions>>().Value;
+    client.BaseAddress = new Uri(options.BaseUrl);
+});
 
 var app = builder.Build();
 
