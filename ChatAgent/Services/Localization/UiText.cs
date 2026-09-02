@@ -14,6 +14,7 @@ public static class UiText
         ["Ingredients"] = ("Ingredients", "Zutaten"),
         ["BestBefore"] = ("Best before", "Mindesthaltbar bis"),
         ["Manufacturer"] = ("Manufacturer", "Hersteller"),
+        ["NewLabel"] = ("Start new label", "Neues Etikett starten"),
     };
 
     public static string Get(string key, UiLanguage language)

@@ -9,11 +9,16 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h4 mb-0">ChatAgent — @T("AppSubtitle")</h1>
-    <div class="btn-group btn-group-sm" role="group" aria-label="Language">
-        <button type="button" class="btn @(ChatState.Language == UiLanguage.English ? "btn-secondary" : "btn-outline-secondary")"
-                @onclick="() => ChatState.SetLanguage(UiLanguage.English)">EN</button>
-        <button type="button" class="btn @(ChatState.Language == UiLanguage.German ? "btn-secondary" : "btn-outline-secondary")"
-                @onclick="() => ChatState.SetLanguage(UiLanguage.German)">DE</button>
+    <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="HandleReset" disabled="@ChatState.IsProcessing">
+            @T("NewLabel")
+        </button>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Language">
+            <button type="button" class="btn @(ChatState.Language == UiLanguage.English ? "btn-secondary" : "btn-outline-secondary")"
+                    @onclick="() => ChatState.SetLanguage(UiLanguage.English)">EN</button>
+            <button type="button" class="btn @(ChatState.Language == UiLanguage.German ? "btn-secondary" : "btn-outline-secondary")"
+                    @onclick="() => ChatState.SetLanguage(UiLanguage.German)">DE</button>
+        </div>
     </div>
 </div>
 
@@ -83,6 +88,12 @@
         var text = _input.Trim();
         _input = "";
         await ChatState.SendUserMessageAsync(text);
+    }
+
+    private void HandleReset()
+    {
+        _input = "";
+        ChatState.Reset();
     }
 
     public void Dispose()

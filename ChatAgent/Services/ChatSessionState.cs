@@ -30,6 +30,19 @@ public sealed class ChatSessionState(IAgentService agentService, ILogger<ChatSes
         StateChanged?.Invoke();
     }
 
+    public void Reset()
+    {
+        if (IsProcessing)
+        {
+            return;
+        }
+
+        _messages.Clear();
+        CurrentLabel = new LabelData();
+        IsLabelReady = false;
+        StateChanged?.Invoke();
+    }
+
     public async Task SendUserMessageAsync(string text)
     {
         if (string.IsNullOrWhiteSpace(text) || IsProcessing)
