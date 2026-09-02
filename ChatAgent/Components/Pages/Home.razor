@@ -1,7 +1,9 @@
 @page "/"
 @rendermode InteractiveServer
 @inject ChatSessionState ChatState
+@inject IJSRuntime JS
 @implements IDisposable
+@implements IAsyncDisposable
 
 <PageTitle>ChatAgent</PageTitle>
 
@@ -10,7 +12,7 @@
 <div class="row">
     <div class="col-md-7">
         <div class="border rounded d-flex flex-column" style="height: 65vh;">
-            <div class="flex-grow-1 overflow-auto p-3">
+            <div class="flex-grow-1 overflow-auto p-3" @ref="_messageListRef">
                 @foreach (var message in ChatState.Messages)
                 {
                     <ChatMessageBubble Message="message" />
@@ -41,10 +43,27 @@
 
 @code {
     private string _input = "";
+    private ElementReference _messageListRef;
+    private IJSObjectReference? _module;
+    private int _lastRenderedMessageCount;
 
     protected override void OnInitialized()
     {
         ChatState.StateChanged += OnChatStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Components/Pages/Home.razor.js");
+        }
+
+        if (_module is not null && ChatState.Messages.Count != _lastRenderedMessageCount)
+        {
+            _lastRenderedMessageCount = ChatState.Messages.Count;
+            await _module.InvokeVoidAsync("scrollToBottom", _messageListRef);
+        }
     }
 
     private void OnChatStateChanged() => InvokeAsync(StateHasChanged);
@@ -59,5 +78,19 @@
     public void Dispose()
     {
         ChatState.StateChanged -= OnChatStateChanged;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is not null)
+        {
+            try
+            {
+                await _module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
     }
 }
