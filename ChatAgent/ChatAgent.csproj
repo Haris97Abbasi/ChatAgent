@@ -8,4 +8,10 @@
     <UserSecretsId>bf7f53b4-e363-4332-b348-4cdc370a8d4b</UserSecretsId>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Content Include="Services\Llm\SystemPrompt.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

@@ -1,4 +1,6 @@
 using ChatAgent.Components;
+using ChatAgent.Models;
+using ChatAgent.Services.Llm;
 using ChatAgent.Services.TecIt;
 using Microsoft.Extensions.Options;
 
@@ -13,6 +15,15 @@ builder.Services.AddHttpClient<TecItBarcodeClient>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<TecItOptions>>().Value;
     client.BaseAddress = new Uri(options.BaseUrl);
+});
+
+builder.Services.Configure<ClaudeOptions>(builder.Configuration.GetSection(ClaudeOptions.SectionName));
+builder.Services.AddHttpClient<IAgentService, ClaudeAgentService>((sp, client) =>
+{
+    var options = sp.GetRequiredService<IOptions<ClaudeOptions>>().Value;
+    client.BaseAddress = new Uri(options.BaseUrl);
+    client.DefaultRequestHeaders.Add("x-api-key", options.ApiKey);
+    client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
 });
 
 var app = builder.Build();
@@ -32,5 +43,14 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapGet("/api/barcode-image", async (string data, string? type, TecItBarcodeClient client, CancellationToken cancellationToken) =>
+{
+    var barcodeType = Enum.TryParse<BarcodeType>(type, ignoreCase: true, out var parsed) ? parsed : BarcodeType.Ean13;
+    var label = new LabelData { BarcodeType = barcodeType, BarcodeData = data };
+
+    var result = await client.GetBarcodeImageAsync(label, cancellationToken);
+    return Results.File(result.ImageBytes, result.ContentType);
+});
 
 app.Run();
