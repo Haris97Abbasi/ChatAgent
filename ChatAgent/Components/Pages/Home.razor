@@ -7,7 +7,15 @@
 
 <PageTitle>ChatAgent</PageTitle>
 
-<h1 class="h4 mb-3">ChatAgent — Getränkeetiketten</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">ChatAgent — @T("AppSubtitle")</h1>
+    <div class="btn-group btn-group-sm" role="group" aria-label="Language">
+        <button type="button" class="btn @(ChatState.Language == UiLanguage.English ? "btn-secondary" : "btn-outline-secondary")"
+                @onclick="() => ChatState.SetLanguage(UiLanguage.English)">EN</button>
+        <button type="button" class="btn @(ChatState.Language == UiLanguage.German ? "btn-secondary" : "btn-outline-secondary")"
+                @onclick="() => ChatState.SetLanguage(UiLanguage.German)">DE</button>
+    </div>
+</div>
 
 <div class="row">
     <div class="col-md-7">
@@ -19,15 +27,15 @@
                 }
                 @if (ChatState.IsProcessing)
                 {
-                    <div class="text-muted fst-italic">Agent is thinking…</div>
+                    <div class="text-muted fst-italic">@T("AgentThinking")</div>
                 }
             </div>
 
             <form class="border-top p-2 d-flex gap-2" @onsubmit="SendAsync">
                 <input class="form-control" @bind="_input" @bind:event="oninput"
-                       placeholder="Describe your beverage label..." disabled="@ChatState.IsProcessing" />
+                       placeholder="@T("InputPlaceholder")" disabled="@ChatState.IsProcessing" />
                 <button class="btn btn-primary" type="submit" disabled="@(ChatState.IsProcessing || string.IsNullOrWhiteSpace(_input))">
-                    Send
+                    @T("Send")
                 </button>
             </form>
         </div>
@@ -36,7 +44,7 @@
     <div class="col-md-5">
         @if (ChatState.IsLabelReady)
         {
-            <LabelPreviewCard Label="ChatState.CurrentLabel" />
+            <LabelPreviewCard Label="ChatState.CurrentLabel" Language="ChatState.Language" />
         }
     </div>
 </div>
@@ -46,6 +54,8 @@
     private ElementReference _messageListRef;
     private IJSObjectReference? _module;
     private int _lastRenderedMessageCount;
+
+    private string T(string key) => UiText.Get(key, ChatState.Language);
 
     protected override void OnInitialized()
     {

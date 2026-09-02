@@ -1,9 +1,9 @@
 namespace ChatAgent.Services.Validation;
 
-public sealed record EanValidationResult(bool IsValid, string? NormalizedValue, string? Error)
+public sealed record EanValidationResult(bool IsValid, string? NormalizedValue, string? Error, ValidationErrorCode? ErrorCode = null)
 {
     public static EanValidationResult Valid(string normalizedValue) => new(true, normalizedValue, null);
-    public static EanValidationResult Invalid(string error) => new(false, null, error);
+    public static EanValidationResult Invalid(string error, ValidationErrorCode code) => new(false, null, error, code);
 }
 
 public static class Ean13Validator
@@ -12,14 +12,14 @@ public static class Ean13Validator
     {
         if (string.IsNullOrWhiteSpace(input))
         {
-            return EanValidationResult.Invalid("Barcode data is required for EAN-13.");
+            return EanValidationResult.Invalid("Barcode data is required for EAN-13.", ValidationErrorCode.Ean13Required);
         }
 
         var digits = input.Trim();
 
         if (!digits.All(char.IsAsciiDigit))
         {
-            return EanValidationResult.Invalid("EAN-13 barcode data must contain only digits.");
+            return EanValidationResult.Invalid("EAN-13 barcode data must contain only digits.", ValidationErrorCode.Ean13NonDigits);
         }
 
         return digits.Length switch
@@ -27,8 +27,8 @@ public static class Ean13Validator
             12 => EanValidationResult.Valid(digits + ComputeCheckDigit(digits)),
             13 when ComputeCheckDigit(digits[..12]) == digits[12] - '0'
                 => EanValidationResult.Valid(digits),
-            13 => EanValidationResult.Invalid("EAN-13 checksum is invalid for the given digits."),
-            _ => EanValidationResult.Invalid("EAN-13 barcode data must be 12 or 13 digits long.")
+            13 => EanValidationResult.Invalid("EAN-13 checksum is invalid for the given digits.", ValidationErrorCode.Ean13InvalidChecksum),
+            _ => EanValidationResult.Invalid("EAN-13 barcode data must be 12 or 13 digits long.", ValidationErrorCode.Ean13WrongLength)
         };
     }
 

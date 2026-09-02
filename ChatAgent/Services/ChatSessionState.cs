@@ -1,5 +1,6 @@
 using ChatAgent.Models;
 using ChatAgent.Services.Llm;
+using ChatAgent.Services.Localization;
 using ChatAgent.Services.Validation;
 
 namespace ChatAgent.Services;
@@ -14,8 +15,20 @@ public sealed class ChatSessionState(IAgentService agentService, ILogger<ChatSes
     public LabelData CurrentLabel { get; private set; } = new();
     public bool IsProcessing { get; private set; }
     public bool IsLabelReady { get; private set; }
+    public UiLanguage Language { get; private set; } = UiLanguage.English;
 
     public event Action? StateChanged;
+
+    public void SetLanguage(UiLanguage language)
+    {
+        if (Language == language)
+        {
+            return;
+        }
+
+        Language = language;
+        StateChanged?.Invoke();
+    }
 
     public async Task SendUserMessageAsync(string text)
     {
@@ -28,7 +41,7 @@ public sealed class ChatSessionState(IAgentService agentService, ILogger<ChatSes
         {
             _messages.Add(new ChatMessage(
                 ChatRole.Agent,
-                $"That message is too long ({text.Length} characters) - please keep it under {MaxMessageLength} characters.",
+                UiText.MessageTooLong(text.Length, MaxMessageLength, Language),
                 DateTimeOffset.UtcNow));
             StateChanged?.Invoke();
             return;
@@ -56,7 +69,7 @@ public sealed class ChatSessionState(IAgentService agentService, ILogger<ChatSes
         catch (Exception ex)
         {
             logger.LogError(ex, "Agent turn processing failed");
-            return "Sorry, I couldn't reach the assistant in time. Please try again.";
+            return UiText.AssistantUnavailable(Language);
         }
 
         CurrentLabel = MergePatch(CurrentLabel, result.LabelDataPatch);
@@ -67,9 +80,9 @@ public sealed class ChatSessionState(IAgentService agentService, ILogger<ChatSes
         if (result.ReadyToGenerate && !IsLabelReady)
         {
             var reason = !validation.IsValid
-                ? validation.Errors[0].Message
+                ? UiText.Get(validation.Errors[0].Code, Language)
                 : result.Conflicts[0].Description;
-            return $"Hold on - before I generate the label: {reason}";
+            return UiText.HoldOnBeforeGenerate(reason, Language);
         }
 
         return result.Reply;

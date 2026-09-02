@@ -11,15 +11,15 @@
             <div class="text-start small text-muted mt-3">
                 @if (!string.IsNullOrWhiteSpace(Label.Ingredients))
                 {
-                    <p class="mb-1"><strong>Ingredients:</strong> @Label.Ingredients</p>
+                    <p class="mb-1"><strong>@(UiText.Get("Ingredients", Language)):</strong> @Label.Ingredients</p>
                 }
                 @if (!string.IsNullOrWhiteSpace(Label.BestBefore))
                 {
-                    <p class="mb-1"><strong>Best before:</strong> @Label.BestBefore</p>
+                    <p class="mb-1"><strong>@(UiText.Get("BestBefore", Language)):</strong> @Label.BestBefore</p>
                 }
                 @if (!string.IsNullOrWhiteSpace(Label.Manufacturer))
                 {
-                    <p class="mb-0"><strong>Manufacturer:</strong> @Label.Manufacturer</p>
+                    <p class="mb-0"><strong>@(UiText.Get("Manufacturer", Language)):</strong> @Label.Manufacturer</p>
                 }
             </div>
         }
@@ -27,12 +27,15 @@
 </div>
 
 <div class="text-center mt-2">
-    <button class="btn btn-outline-secondary btn-sm" @onclick="PrintAsync">Print label</button>
+    <button class="btn btn-outline-secondary btn-sm" @onclick="PrintAsync">@UiText.Get("PrintLabel", Language)</button>
 </div>
 
 @code {
     [Parameter, EditorRequired]
     public required LabelData Label { get; set; }
+
+    [Parameter]
+    public UiLanguage Language { get; set; } = UiLanguage.English;
 
     private string ImageUrl =>
         $"/api/barcode-image?data={Uri.EscapeDataString(Label.BarcodeData ?? "")}&type={Label.BarcodeType ?? BarcodeType.Ean13}";
