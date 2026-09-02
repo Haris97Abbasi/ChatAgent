@@ -5,6 +5,24 @@
         <h5 class="card-title mb-1">@Label.ProductName</h5>
         <p class="text-muted mb-2">@Label.Volume</p>
         <img src="@ImageUrl" alt="Barcode" class="img-fluid" />
+
+        @if (HasDetails)
+        {
+            <div class="text-start small text-muted mt-3">
+                @if (!string.IsNullOrWhiteSpace(Label.Ingredients))
+                {
+                    <p class="mb-1"><strong>Ingredients:</strong> @Label.Ingredients</p>
+                }
+                @if (!string.IsNullOrWhiteSpace(Label.BestBefore))
+                {
+                    <p class="mb-1"><strong>Best before:</strong> @Label.BestBefore</p>
+                }
+                @if (!string.IsNullOrWhiteSpace(Label.Manufacturer))
+                {
+                    <p class="mb-0"><strong>Manufacturer:</strong> @Label.Manufacturer</p>
+                }
+            </div>
+        }
     </div>
 </div>
 
@@ -18,6 +36,11 @@
 
     private string ImageUrl =>
         $"/api/barcode-image?data={Uri.EscapeDataString(Label.BarcodeData ?? "")}&type={Label.BarcodeType ?? BarcodeType.Ean13}";
+
+    private bool HasDetails =>
+        !string.IsNullOrWhiteSpace(Label.Ingredients) ||
+        !string.IsNullOrWhiteSpace(Label.BestBefore) ||
+        !string.IsNullOrWhiteSpace(Label.Manufacturer);
 
     private async Task PrintAsync() => await JS.InvokeVoidAsync("window.print");
 }
